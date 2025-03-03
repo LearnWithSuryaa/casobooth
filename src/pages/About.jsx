@@ -1,6 +1,6 @@
 export default function About() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-300 to-white py-50 px-6">
+    <div className="h-screen w-screen overflow-hidden grid place-items-center bg-gradient-to-b from-pink-300 to-white px-6 py-25">
       <div className="max-w-3xl mx-auto text-center">
         {/* Header */}
         <h2 className="text-5xl font-extrabold text-pink-600 mb-6 drop-shadow-lg">

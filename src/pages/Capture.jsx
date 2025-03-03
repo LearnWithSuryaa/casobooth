@@ -168,14 +168,14 @@ export default function Capture({ setCapturedImages = () => {} }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-200 to-pink-300 flex flex-col items-center justify-center px-6 py-10 relative">
-      <h2 className="text-5xl font-extrabold text-pink-900 mb-6 drop-shadow-lg">
+    <div className="min-h-screen bg-gradient-to-b from-pink-200 to-pink-300 flex flex-col items-center justify-center px-4 sm:px-6 py-10 relative">
+      <h2 className="text-4xl sm:text-5xl font-extrabold text-pink-900 mb-6 drop-shadow-lg text-center">
         Casobooth Capture
       </h2>
 
-      <div className="relative flex items-start">
+      <div className="relative flex flex-col sm:flex-row items-center sm:items-start sm:space-x-6">
         {/* Live Camera */}
-        <div className="w-[400px] h-[300px] bg-black rounded-lg shadow-xl overflow-hidden flex-shrink-0">
+        <div className="w-full sm:w-[400px] h-[250px] sm:h-[300px] bg-black rounded-lg shadow-xl overflow-hidden flex-shrink-0">
           <video
             ref={videoRef}
             autoPlay
@@ -183,15 +183,15 @@ export default function Capture({ setCapturedImages = () => {} }) {
           ></video>
         </div>
 
-        {/* Captured Photos in Grid (2x2) */}
-        <div className="ml-4 grid grid-cols-2 gap-2">
+        {/* Captured Photos in Grid */}
+        <div className="mt-4 sm:mt-0 grid grid-cols-2 sm:grid-cols-2 gap-2">
           {capturedImages.slice(0, 4).map((img, index) => (
             <motion.img
               key={index}
-              src={img.imageUrl} // 🔹 Gunakan imageUrl dari objek
+              src={img.imageUrl}
               alt={`Captured ${index + 1}`}
-              className="w-[230px] h-[145px] rounded-md border-pink-400 shadow-lg"
-              style={{ filter: img.filter }} // 🔹 Terapkan filter
+              className="w-[140px] h-[90px] sm:w-[230px] sm:h-[145px] rounded-md border-pink-400 shadow-lg"
+              style={{ filter: img.filter }}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3 }}
@@ -202,36 +202,42 @@ export default function Capture({ setCapturedImages = () => {} }) {
 
       <canvas ref={canvasRef} className="hidden"></canvas>
 
-      <div className="mt-6 flex space-x-4">
+      {/* Filter Buttons */}
+      <div className="mt-6 flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-6">
         {filters.map((f) => (
           <button
             key={f.value}
             onClick={() => handleFilterChange(f.value)}
-            disabled={capturing} // Menonaktifkan tombol saat capturing
-            className={`px-4 py-2 rounded-lg border-2 ${
-              filter === f.value
-                ? "border-pink-600 bg-pink-300"
-                : "border-gray-300"
-            } ${capturing ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={capturing}
+            className={`px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-lg border-2
+        transition-all duration-300 ease-in-out shadow-md
+        ${
+          filter === f.value
+            ? "border-pink-600 bg-pink-400 text-white shadow-lg"
+            : " bg-pink-300 text-gray-800 hover:bg-pink-400 hover:border-pink-500"
+        }
+        ${capturing ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             {f.name}
           </button>
         ))}
       </div>
 
-      <div className="flex gap-4 mt-8">
+      {/* Capture Button */}
+      <div className="flex gap-4 mt-6 sm:mt-8">
         <button
           onClick={startCountdown}
-          disabled={capturing} // Mencegah klik saat capture berjalan
-          className={`px-8 py-3 text-lg font-semibold border-2 border-black rounded-full bg-pink-600 text-white transition-all shadow-lg hover:shadow-2xl flex items-center gap-2
-      ${capturing ? "opacity-50 cursor-not-allowed" : "hover:bg-pink-700"}`}
+          disabled={capturing}
+          className={`px-6 sm:px-8 py-3 text-base sm:text-lg font-semibold border-2 border-black rounded-full bg-pink-600 text-white transition-all shadow-lg hover:shadow-2xl flex items-center gap-2
+          ${capturing ? "opacity-50 cursor-not-allowed" : "hover:bg-pink-700"}`}
         >
           <FaCamera /> Start Capture
         </button>
       </div>
 
+      {/* Countdown */}
       {countdown !== null && (
-        <motion.div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-black/50 text-white text-5xl font-bold px-6 py-3 rounded-lg">
+        <motion.div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-black/50 text-white text-4xl sm:text-5xl font-bold px-6 py-3 rounded-lg">
           {countdown}
         </motion.div>
       )}
