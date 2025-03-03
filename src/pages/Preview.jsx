@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import domtoimage from "dom-to-image";
+import { toPng } from "html-to-image"; // Ganti dom-to-image dengan html-to-image
+import { Loader2 } from "lucide-react"; // Untuk ikon loading
 
 const frameColors = {
   white: "#ffffff",
@@ -9,7 +10,6 @@ const frameColors = {
   yellow: "#ffeb3b",
 };
 
-// Stiker bisa berupa URL atau emoji
 const stickers = [
   { name: "No Stickers", value: null },
   { name: "🎀 Girlypop", value: "🎀" },
@@ -20,29 +20,49 @@ const stickers = [
 export default function PhotoStripPreview({ capturedImages = [] }) {
   const [frameColor, setFrameColor] = useState("white");
   const [selectedSticker, setSelectedSticker] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
   const stripRef = useRef(null);
+  const [isRendering, setIsRendering] = useState(false);
 
-  const downloadPhotoStrip = () => {
-    if (!stripRef.current) {
-      console.error("Elemen tidak ditemukan!");
+  const waitForImagesToLoad = async () => {
+    const images = stripRef.current?.querySelectorAll("img") || [];
+    await Promise.all(
+      Array.from(images).map((img) => {
+        return new Promise((resolve) => {
+          if (img.complete) {
+            resolve();
+          } else {
+            img.onload = resolve;
+            img.onerror = resolve;
+          }
+        });
+      })
+    );
+  };
+
+  const downloadPhotoStrip = async () => {
+    if (!stripRef.current || capturedImages.length === 0) {
+      setErrorMessage("Tidak ada gambar untuk di-download!");
       return;
     }
 
-    console.log("Menunggu gambar dimuat...");
-    setTimeout(() => {
-      domtoimage
-        .toBlob(stripRef.current)
-        .then((blob) => {
-          const link = document.createElement("a");
-          link.href = URL.createObjectURL(blob);
-          link.download = "photo_strip.png";
-          link.click();
-          console.log("Photo strip berhasil didownload!");
-        })
-        .catch((error) => {
-          console.error("Gagal membuat screenshot:", error);
-        });
-    }, 500); // Tunggu 500ms agar semua elemen dimuat
+    setIsRendering(true);
+    await waitForImagesToLoad();
+
+    toPng(stripRef.current)
+      .then((dataUrl) => {
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = "photo_strip.png";
+        link.click();
+      })
+      .catch((error) => {
+        setErrorMessage("Gagal membuat screenshot: " + error.message);
+        console.error("Gagal membuat screenshot:", error);
+      })
+      .finally(() => {
+        setIsRendering(false);
+      });
   };
 
   return (
@@ -60,12 +80,11 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
           <button
             key={color}
             onClick={() => setFrameColor(color)}
-            className={`px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-lg border-2
-        transition-all duration-300 ease-in-out shadow-md ${
-          frameColor === color
-            ? "border-pink-600 bg-pink-400 text-white shadow-lg"
-            : "bg-pink-300 text-gray-800 hover:bg-pink-400 hover:border-pink-500"
-        }`}
+            className={`px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-lg border-2 shadow-md transition-all duration-300 ${
+              frameColor === color
+                ? "border-pink-600 bg-pink-400 text-white shadow-lg"
+                : "bg-pink-300 text-gray-800 hover:bg-pink-400 hover:border-pink-500"
+            }`}
           >
             {color.charAt(0).toUpperCase() + color.slice(1)}
           </button>
@@ -78,12 +97,11 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
           <button
             key={sticker.value}
             onClick={() => setSelectedSticker(sticker.value)}
-            className={`px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-lg border-2
-        transition-all duration-300 ease-in-out shadow-md ${
-          selectedSticker === sticker.value
-            ? "border-pink-600 bg-pink-400 text-white shadow-lg"
-            : "bg-pink-300 text-gray-800 hover:bg-pink-400 hover:border-pink-500"
-        }`}
+            className={`px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-lg border-2 shadow-md transition-all duration-300 ${
+              selectedSticker === sticker.value
+                ? "border-pink-600 bg-pink-400 text-white shadow-lg"
+                : "bg-pink-300 text-gray-800 hover:bg-pink-400 hover:border-pink-500"
+            }`}
           >
             {sticker.name}
           </button>
@@ -97,39 +115,27 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
         style={{
           backgroundColor: frameColors[frameColor],
           width: "100%",
-          maxWidth: "260px", // Lebih sempit
-          minHeight: "900px", // Lebih tinggi
+          maxWidth: "260px",
+          minHeight: "900px",
           padding: "15px",
         }}
       >
-        {capturedImages.map((img, index) => (
-          <div key={index} className="relative mb-3 w-full">
-            <img
-              src={img.imageUrl}
-              alt={`Captured ${index + 1}`}
-              className="w-full h-64 object-cover rounded-md" // Lebih tinggi
-              style={{ filter: img.filter }}
-              onLoad={() => console.log(`Gambar ${index + 1} telah dimuat`)}
-            />
-            {selectedSticker && (
-              <div className="absolute inset-0 flex flex-wrap items-center justify-between p-1">
-                {[...Array(4)].map((_, i) =>
-                  typeof selectedSticker === "string" &&
-                  selectedSticker.startsWith("http") ? (
-                    <img
-                      key={i}
-                      src={selectedSticker}
-                      alt="Sticker"
-                      className="w-5 h-5 opacity-80"
-                      style={{
-                        position: "absolute",
-                        top: i % 2 === 0 ? "5px" : "auto",
-                        bottom: i % 2 !== 0 ? "5px" : "auto",
-                        left: i < 2 ? "5px" : "auto",
-                        right: i >= 2 ? "5px" : "auto",
-                      }}
-                    />
-                  ) : (
+        {capturedImages.length === 0 ? (
+          <p className="text-gray-600 text-center">
+            Belum ada foto yang diambil
+          </p>
+        ) : (
+          capturedImages.map((img, index) => (
+            <div key={index} className="relative mb-3 w-full">
+              <img
+                src={img.imageUrl}
+                alt={`Captured ${index + 1}`}
+                className="w-full h-64 object-cover rounded-md"
+                style={{ filter: img.filter }}
+              />
+              {selectedSticker && (
+                <div className="absolute inset-0 flex flex-wrap items-center justify-between p-1">
+                  {[...Array(4)].map((_, i) => (
                     <span
                       key={i}
                       className="absolute text-xs opacity-80"
@@ -143,12 +149,12 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
                     >
                       {selectedSticker}
                     </span>
-                  )
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
 
         {/* Watermark */}
         <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-gray-600 text-xs font-semibold opacity-80 whitespace-nowrap">
@@ -159,10 +165,30 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
       {/* Download Button */}
       <button
         onClick={downloadPhotoStrip}
-        className="mt-6 px-5 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-pink-600 text-white font-semibold rounded-lg hover:bg-pink-700 shadow-md"
+        disabled={isRendering || capturedImages.length === 0}
+        className={`mt-6 px-5 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold rounded-lg shadow-md ${
+          isRendering || capturedImages.length === 0
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-pink-600 hover:bg-pink-700 text-white"
+        }`}
       >
-        Download Photo Strip
+        {isRendering ? (
+          <Loader2 className="animate-spin w-5 h-5" />
+        ) : (
+          "Download Photo Strip"
+        )}
       </button>
+
+      {/* Pesan Error */}
+      {errorMessage && (
+        <p className="mt-2 text-red-500 text-center font-medium">
+          {errorMessage}
+        </p>
+      )}
+
+      <p className="py-5">
+        jika download tidak menampilkan gambar, ulangi proses download kembali 🙏🏻
+      </p>
     </div>
   );
 }
