@@ -6,9 +6,9 @@ export default function Home() {
   return (
     <div
       className="min-h-screen w-screen flex items-center justify-center 
-  bg-gradient-to-b from-pink-200 to-pink-300 text-black px-4 sm:px-6 pt-20"
+      bg-[url('/background.jpg')] bg-cover bg-center bg-no-repeat text-black px-4 sm:px-6 pt-20"
     >
-      <div className="flex flex-col items-center text-center max-w-xs sm:max-w-md md:max-w-lg">
+      <div className="flex flex-col items-center text-center max-w-xs sm:max-w-md md:max-w-lg bg-pink-100/60 p-6 rounded-xl shadow-lg">
         {/* Header */}
         <motion.h1
           className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-wider text-pink-900 drop-shadow-lg"

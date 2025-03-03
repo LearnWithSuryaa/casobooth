@@ -168,12 +168,12 @@ export default function Capture({ setCapturedImages = () => {} }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-200 to-pink-300 flex flex-col items-center justify-center px-4 sm:px-6 py-10 relative">
+    <div className="min-h-screen bg-[url('/background.jpg')] bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center px-4 sm:px-6 py-10 relative">
       <h2 className="text-4xl sm:text-5xl font-extrabold text-pink-900 mb-6 drop-shadow-lg text-center">
         Casobooth Capture
       </h2>
 
-      <div className="relative flex flex-col sm:flex-row items-center sm:items-start sm:space-x-6">
+      <div className="relative flex flex-col sm:flex-row items-center sm:items-start sm:space-x-6 bg-pink-100/80 p-4 sm:p-6 rounded-xl shadow-xl">
         {/* Live Camera */}
         <div className="w-full sm:w-[400px] h-[250px] sm:h-[300px] bg-black rounded-lg shadow-xl overflow-hidden flex-shrink-0">
           <video
@@ -210,13 +210,13 @@ export default function Capture({ setCapturedImages = () => {} }) {
             onClick={() => handleFilterChange(f.value)}
             disabled={capturing}
             className={`px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-lg border-2
-        transition-all duration-300 ease-in-out shadow-md
-        ${
-          filter === f.value
-            ? "border-pink-600 bg-pink-400 text-white shadow-lg"
-            : " bg-pink-300 text-gray-800 hover:bg-pink-400 hover:border-pink-500"
-        }
-        ${capturing ? "opacity-50 cursor-not-allowed" : ""}`}
+            transition-all duration-300 ease-in-out shadow-md
+            ${
+              filter === f.value
+                ? "border-pink-600 bg-pink-400 text-white shadow-lg"
+                : " bg-pink-300 text-gray-800 hover:bg-pink-400 hover:border-pink-500"
+            }
+            ${capturing ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             {f.name}
           </button>

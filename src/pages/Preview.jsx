@@ -49,11 +49,11 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
     setIsRendering(true);
     await waitForImagesToLoad();
 
-    toPng(stripRef.current)
+    toPng(stripRef.current, { useCORS: true }) // Menambahkan opsi useCORS
       .then((dataUrl) => {
         const link = document.createElement("a");
         link.href = dataUrl;
-        link.download = "photo_strip.png";
+        link.download = "Casobooth.png";
         link.click();
       })
       .catch((error) => {
@@ -131,25 +131,32 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
                 src={img.imageUrl}
                 alt={`Captured ${index + 1}`}
                 className="w-full h-64 object-cover rounded-md"
+                crossOrigin="anonymous" // Tambahkan agar gambar dari sumber luar bisa dimuat
                 style={{ filter: img.filter }}
               />
               {selectedSticker && (
-                <div className="absolute inset-0 flex flex-wrap items-center justify-between p-1">
-                  {[...Array(4)].map((_, i) => (
-                    <span
-                      key={i}
-                      className="absolute text-xs opacity-80"
-                      style={{
-                        position: "absolute",
-                        top: i % 2 === 0 ? "5px" : "auto",
-                        bottom: i % 2 !== 0 ? "5px" : "auto",
-                        left: i < 2 ? "5px" : "auto",
-                        right: i >= 2 ? "5px" : "auto",
-                      }}
-                    >
-                      {selectedSticker}
-                    </span>
-                  ))}
+                <div className="absolute inset-0 pointer-events-none">
+                  {[...Array(20)].map((_, i) => {
+                    const size = Math.random() * 12 + 8; // Ukuran acak antara 8px - 20px
+                    const opacity = Math.random() * 0.5 + 0.3; // Opasitas antara 0.3 - 0.8
+                    const rotate = Math.random() * 360; // Rotasi acak 0 - 360 derajat
+
+                    return (
+                      <span
+                        key={i}
+                        className="absolute"
+                        style={{
+                          fontSize: `${size}px`,
+                          top: `${Math.random() * 100}%`,
+                          left: `${Math.random() * 100}%`,
+                          opacity: opacity,
+                          transform: `rotate(${rotate}deg)`,
+                        }}
+                      >
+                        {selectedSticker}
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -187,7 +194,8 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
       )}
 
       <p className="py-5">
-        jika download tidak menampilkan gambar, ulangi proses download kembali 🙏🏻
+        Jika download tidak menampilkan gambar, ulangi proses download kembali
+        🙏🏻
       </p>
     </div>
   );
