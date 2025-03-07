@@ -4,10 +4,11 @@ import { Loader2 } from "lucide-react"; // Untuk ikon loading
 
 const frameColors = {
   white: "#ffffff",
-  black: "#000000",
-  pink: "#ff66b2",
-  green: "#4caf50",
-  yellow: "#ffeb3b",
+  pink: "#ffdae2",
+  blue: "#c8deef",
+  green: "#cfe4bb",
+  yellow: "#fffac1",
+  purple: "#d5c2f0",
 };
 
 const stickers = [
