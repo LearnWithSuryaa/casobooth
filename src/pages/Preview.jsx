@@ -75,14 +75,20 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-200 to-pink-300 flex flex-col items-center py-24 px-4 sm:px-6">
+    <div
+      className="min-h-screen bg-gradient-to-b from-pink-200 to-pink-300 flex flex-col items-center py-24 px-4 sm:px-6"
+      style={{
+        backgroundImage: "url('/background.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
       <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 text-center">
         Photo Strip Preview
       </h2>
       <p className="text-gray-700 mb-4 text-center">
         Customize your photo strip
       </p>
-
       {/* Frame Color Selection */}
       <div className="flex flex-wrap justify-center gap-2 mb-6">
         {Object.entries(frameColors).map(([color, hex]) => (
@@ -99,7 +105,6 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
           </button>
         ))}
       </div>
-
       {/* Sticker Selection */}
       <div className="flex flex-wrap justify-center gap-2 mb-6">
         {stickers.map((sticker) => (
@@ -116,7 +121,6 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
           </button>
         ))}
       </div>
-
       {/* Photo Strip */}
       <div
         ref={stripRef}
@@ -172,7 +176,6 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
           © {new Date().getFullYear()} Casofin Photo Booth
         </div>
       </div>
-
       {/* Download Button */}
       <button
         onClick={downloadPhotoStrip}
@@ -183,14 +186,21 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
             : "bg-pink-600 hover:bg-pink-700 text-white"
         }`}
       >
-        {isRendering ? <Loader2 className="animate-spin w-5 h-5" /> : "Download Photo Strip"}
+        {isRendering ? (
+          <Loader2 className="animate-spin w-5 h-5" />
+        ) : (
+          "Download Photo Strip"
+        )}
       </button>
-
       {errorMessage && (
         <p className="mt-2 text-red-500 text-center font-medium">
           {errorMessage}
         </p>
       )}
+      <p className="text-base sm:text-lg text-gray-800 mt-4 leading-relaxed px-2 sm:px-4 text-center">
+        "Jika download gagal, silakan coba lagi 🙏. Ini disebabkan oleh
+        pembatasan browser (CORS), dan kami sedang berusaha memperbaikinya 😊."
+      </p>
     </div>
   );
 }
