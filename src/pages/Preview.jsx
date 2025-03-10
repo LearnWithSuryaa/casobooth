@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
-import { toPng } from "html-to-image"; // Ganti dom-to-image dengan html-to-image
-import { Loader2 } from "lucide-react"; // Untuk ikon loading
+import { toPng } from "html-to-image";
+import { Loader2 } from "lucide-react";
 
 const frameColors = {
   white: "#ffffff",
@@ -16,6 +16,8 @@ const stickers = [
   { name: "🎀 Girlypop", value: "🎀" },
   { name: "🐱 Mofusand", value: "🐱" },
   { name: "💖 Cute", value: "💖" },
+  { name: "🚀 Rocket", value: "🚀" },
+  { name: "☠️ Skull", value: "☠️" },
 ];
 
 export default function PhotoStripPreview({ capturedImages = [] }) {
@@ -25,6 +27,7 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
   const stripRef = useRef(null);
   const [isRendering, setIsRendering] = useState(false);
 
+  // Menunggu semua gambar termuat
   const waitForImagesToLoad = async () => {
     const images = stripRef.current?.querySelectorAll("img") || [];
     await Promise.all(
@@ -48,22 +51,27 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
     }
 
     setIsRendering(true);
+    setErrorMessage("");
+
     await waitForImagesToLoad();
 
-    toPng(stripRef.current, { useCORS: true }) // Menambahkan opsi useCORS
-      .then((dataUrl) => {
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = "Casobooth.png";
-        link.click();
-      })
-      .catch((error) => {
-        setErrorMessage("Gagal membuat screenshot: " + error.message);
-        console.error("Gagal membuat screenshot:", error);
-      })
-      .finally(() => {
-        setIsRendering(false);
-      });
+    // Menambahkan sedikit delay untuk memastikan semua gambar ter-load
+    setTimeout(() => {
+      toPng(stripRef.current, { useCORS: true, cacheBust: true }) // `cacheBust` untuk mencegah masalah gambar kosong
+        .then((dataUrl) => {
+          const link = document.createElement("a");
+          link.href = dataUrl;
+          link.download = "Casobooth.png";
+          link.click();
+        })
+        .catch((error) => {
+          setErrorMessage("Gagal membuat screenshot! Coba lagi.");
+          console.error("Gagal membuat screenshot:", error);
+        })
+        .finally(() => {
+          setIsRendering(false);
+        });
+    }, 500);
   };
 
   return (
@@ -132,32 +140,27 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
                 src={img.imageUrl}
                 alt={`Captured ${index + 1}`}
                 className="w-full h-64 object-cover rounded-md"
-                crossOrigin="anonymous" // Tambahkan agar gambar dari sumber luar bisa dimuat
-                style={{ filter: img.filter }}
+                crossOrigin="anonymous"
+                style={{ filter: img.filter }} // Tambahkan filter gambar
               />
+
               {selectedSticker && (
                 <div className="absolute inset-0 pointer-events-none">
-                  {[...Array(20)].map((_, i) => {
-                    const size = Math.random() * 12 + 8; // Ukuran acak antara 8px - 20px
-                    const opacity = Math.random() * 0.5 + 0.3; // Opasitas antara 0.3 - 0.8
-                    const rotate = Math.random() * 360; // Rotasi acak 0 - 360 derajat
-
-                    return (
-                      <span
-                        key={i}
-                        className="absolute"
-                        style={{
-                          fontSize: `${size}px`,
-                          top: `${Math.random() * 100}%`,
-                          left: `${Math.random() * 100}%`,
-                          opacity: opacity,
-                          transform: `rotate(${rotate}deg)`,
-                        }}
-                      >
-                        {selectedSticker}
-                      </span>
-                    );
-                  })}
+                  {[...Array(20)].map((_, i) => (
+                    <span
+                      key={i}
+                      className="absolute"
+                      style={{
+                        fontSize: `${Math.random() * 12 + 8}px`,
+                        top: `${Math.random() * 100}%`,
+                        left: `${Math.random() * 100}%`,
+                        opacity: Math.random() * 0.5 + 0.3,
+                        transform: `rotate(${Math.random() * 360}deg)`,
+                      }}
+                    >
+                      {selectedSticker}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
@@ -180,24 +183,14 @@ export default function PhotoStripPreview({ capturedImages = [] }) {
             : "bg-pink-600 hover:bg-pink-700 text-white"
         }`}
       >
-        {isRendering ? (
-          <Loader2 className="animate-spin w-5 h-5" />
-        ) : (
-          "Download Photo Strip"
-        )}
+        {isRendering ? <Loader2 className="animate-spin w-5 h-5" /> : "Download Photo Strip"}
       </button>
 
-      {/* Pesan Error */}
       {errorMessage && (
         <p className="mt-2 text-red-500 text-center font-medium">
           {errorMessage}
         </p>
       )}
-
-      <p className="py-5">
-        Jika download tidak menampilkan gambar, ulangi proses download kembali
-        🙏🏻
-      </p>
     </div>
   );
 }
