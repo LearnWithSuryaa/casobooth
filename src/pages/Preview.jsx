@@ -1,206 +1,176 @@
-import { useState, useRef } from "react";
-import { toPng } from "html-to-image";
-import { Loader2 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
-const frameColors = {
-  white: "#ffffff",
-  pink: "#ffdae2",
-  blue: "#c8deef",
-  green: "#cfe4bb",
-  yellow: "#fffac1",
-  purple: "#d5c2f0",
-};
+export default function PreviewPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Validasi agar hanya gambar yang memiliki `imageUrl` yang masuk
+  const capturedImages = Array.isArray(location.state?.capturedImages)
+    ? location.state.capturedImages.filter(img => img?.imageUrl)
+    : [];
 
-const stickers = [
-  { name: "No Stickers", value: null },
-  { name: "🎀 Girlypop", value: "🎀" },
-  { name: "🐱 Mofusand", value: "🐱" },
-  { name: "💖 Cute", value: "💖" },
-  { name: "🚀 Rocket", value: "🚀" },
-  { name: "☠️ Skull", value: "☠️" },
-];
+  useEffect(() => {
+    if (capturedImages.length === 0) {
+      navigate("/Capture");
+    }
+  }, [capturedImages, navigate]);
 
-export default function PhotoStripPreview({ capturedImages = [] }) {
-  const [frameColor, setFrameColor] = useState("white");
-  const [selectedSticker, setSelectedSticker] = useState(null);
-  const [errorMessage, setErrorMessage] = useState("");
-  const stripRef = useRef(null);
-  const [isRendering, setIsRendering] = useState(false);
+  const [frameColor, setFrameColor] = useState("#ffffff"); 
+  const [layout, setLayout] = useState("strip");
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  // Menunggu semua gambar termuat
-  const waitForImagesToLoad = async () => {
-    const images = stripRef.current?.querySelectorAll("img") || [];
-    await Promise.all(
-      Array.from(images).map((img) => {
-        return new Promise((resolve) => {
-          if (img.complete) {
-            resolve();
-          } else {
-            img.onload = resolve;
-            img.onerror = resolve;
-          }
-        });
-      })
-    );
-  };
+  const imgWidth = 300;
+  const imgHeight = 225;
+  const spacing = 25;
+  const borderSize = 30;
+  const wmHeight = 70;
+  const cornerRadius = 10;
+  
+  const isGrid = layout === "grid";
+  const cols = isGrid ? 2 : 1;
+  const rows = Math.ceil(capturedImages.length / cols);
+  const totalHeight = rows * imgHeight + (rows - 1) * spacing + 2 * borderSize + wmHeight;
+  const totalWidth = isGrid
+    ? cols * imgWidth + (cols - 1) * spacing + 2 * borderSize
+    : imgWidth + 2 * borderSize;
 
   const downloadPhotoStrip = async () => {
-    if (!stripRef.current || capturedImages.length === 0) {
-      setErrorMessage("Tidak ada gambar untuk di-download!");
-      return;
-    }
+    if (capturedImages.length === 0) return;
+    setIsDownloading(true); 
 
-    setIsRendering(true);
-    setErrorMessage("");
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    canvas.width = totalWidth;
+    canvas.height = totalHeight;
 
-    await waitForImagesToLoad();
+    // 🔹 Background dengan Sudut Membulat
+    context.fillStyle = frameColor;
+    context.beginPath();
+    context.moveTo(cornerRadius, 0);
+    context.arcTo(canvas.width, 0, canvas.width, canvas.height, cornerRadius);
+    context.arcTo(canvas.width, canvas.height, 0, canvas.height, cornerRadius);
+    context.arcTo(0, canvas.height, 0, 0, cornerRadius);
+    context.arcTo(0, 0, canvas.width, 0, cornerRadius);
+    context.closePath();
+    context.fill();
 
-    // Menambahkan sedikit delay untuk memastikan semua gambar ter-load
-    setTimeout(() => {
-      toPng(stripRef.current, { useCORS: true, cacheBust: true }) // `cacheBust` untuk mencegah masalah gambar kosong
-        .then((dataUrl) => {
-          const link = document.createElement("a");
-          link.href = dataUrl;
-          link.download = "Casobooth.png";
-          link.click();
-        })
-        .catch((error) => {
-          setErrorMessage("Gagal membuat screenshot! Coba lagi.");
-          console.error("Gagal membuat screenshot:", error);
-        })
-        .finally(() => {
-          setIsRendering(false);
-        });
-    }, 500);
+    // 🔹 Fungsi menggambar gambar dengan filter
+    const drawRoundedImage = (ctx, img, x, y, width, height, radius) => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + width, y, x + width, y + height, radius);
+      ctx.arcTo(x + width, y + height, x, y + height, radius);
+      ctx.arcTo(x, y + height, x, y, radius);
+      ctx.arcTo(x, y, x + width, y, radius);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(img, x, y, width, height);
+      ctx.restore();
+    };
+
+    // 🔹 Load & Apply Filter pada Gambar
+    const applyFilterAndDraw = (imgData, index) => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.src = imgData.imageUrl;
+        img.crossOrigin = "anonymous";
+
+        img.onload = () => {
+          const tempCanvas = document.createElement("canvas");
+          const tempCtx = tempCanvas.getContext("2d");
+          tempCanvas.width = imgWidth;
+          tempCanvas.height = imgHeight;
+
+          tempCtx.filter = imgData.filter || "none";
+          tempCtx.drawImage(img, 0, 0, imgWidth, imgHeight);
+
+          const col = isGrid ? index % cols : 0;
+          const row = isGrid ? Math.floor(index / cols) : index;
+          const xPos = borderSize + col * (imgWidth + spacing);
+          const yPos = borderSize + row * (imgHeight + spacing);
+
+          drawRoundedImage(context, tempCanvas, xPos, yPos, imgWidth, imgHeight, cornerRadius);
+          resolve();
+        };
+      });
+    };
+
+    await Promise.all(capturedImages.map(applyFilterAndDraw));
+
+    // 🔹 Watermark
+    context.fillStyle = "#222";
+    context.font = "bold 20px Arial";
+    context.textAlign = "center";
+    context.fillText("Casobooth", canvas.width / 2, totalHeight - 60);
+    context.font = "16px Arial";
+    context.fillText(
+      `📸 ${new Date().toLocaleString("en-US", {
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`,
+      canvas.width / 2,
+      totalHeight - 40
+    );
+
+    // 🔹 Simpan sebagai File (Menggunakan `toBlob()` untuk Efisiensi)
+    canvas.toBlob((blob) => {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "casobooth_photo_strip.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setIsDownloading(false);
+    }, "image/png");
   };
 
   return (
-    <div
-      className="min-h-screen bg-gradient-to-b from-pink-200 to-pink-300 flex flex-col items-center py-24 px-4 sm:px-6"
-      style={{
-        backgroundImage: "url('/background.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 text-center">
-        Photo Strip Preview
-      </h2>
-      <p className="text-gray-700 mb-4 text-center">
-        Customize your photo strip
-      </p>
-      {/* Frame Color Selection */}
-      <div className="flex flex-wrap justify-center gap-2 mb-6">
-        {Object.entries(frameColors).map(([color, hex]) => (
+    <div className="min-h-screen flex flex-col items-center bg-gray-200 py-30">
+      <h2 className="text-3xl font-extrabold text-gray-900 mb-6">Photo Strip Preview</h2>
+
+      {/* Pilihan Warna Frame */}
+      <div className="mb-4 flex gap-3">
+        {["#ffffff", "#fffac1", "#ffdae2", "#c8deef", "#cfe4bb", "#d5c2f0"].map((color) => (
           <button
             key={color}
+            className={`w-8 h-8 rounded-full border-2 ${
+              frameColor === color ? "border-black" : "border-gray-400"
+            }`}
+            style={{ backgroundColor: color }}
             onClick={() => setFrameColor(color)}
-            className={`px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-lg border-2 shadow-md transition-all duration-300 ${
-              frameColor === color
-                ? "border-pink-600 bg-pink-400 text-white shadow-lg"
-                : "bg-pink-300 text-gray-800 hover:bg-pink-400 hover:border-pink-500"
-            }`}
-          >
-            {color.charAt(0).toUpperCase() + color.slice(1)}
-          </button>
+          />
         ))}
       </div>
-      {/* Sticker Selection */}
-      <div className="flex flex-wrap justify-center gap-2 mb-6">
-        {stickers.map((sticker) => (
-          <button
-            key={sticker.value}
-            onClick={() => setSelectedSticker(sticker.value)}
-            className={`px-4 sm:px-5 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-lg border-2 shadow-md transition-all duration-300 ${
-              selectedSticker === sticker.value
-                ? "border-pink-600 bg-pink-400 text-white shadow-lg"
-                : "bg-pink-300 text-gray-800 hover:bg-pink-400 hover:border-pink-500"
-            }`}
-          >
-            {sticker.name}
-          </button>
-        ))}
+
+      {/* Pilihan Layout */}
+      <div className="mb-4 flex gap-3">
+        <button className={`px-4 py-2 rounded-lg shadow ${layout === "strip" ? "bg-blue-600 text-white" : "bg-gray-300"}`} onClick={() => setLayout("strip")}>Strip Layout</button>
+        <button className={`px-4 py-2 rounded-lg shadow ${layout === "grid" ? "bg-blue-600 text-white" : "bg-gray-300"}`} onClick={() => setLayout("grid")}>Grid Layout</button>
       </div>
-      {/* Photo Strip */}
-      <div
-        ref={stripRef}
-        className="p-4 rounded-lg shadow-lg relative flex flex-col items-center gap-1"
-        style={{
-          backgroundColor: frameColors[frameColor],
-          width: "100%",
-          maxWidth: "260px",
-          minHeight: "900px",
-          padding: "15px",
-        }}
-      >
-        {capturedImages.length === 0 ? (
-          <p className="text-gray-600 text-center">
-            Belum ada foto yang diambil
-          </p>
-        ) : (
-          capturedImages.map((img, index) => (
-            <div key={index} className="relative mb-3 w-full">
-              <img
-                src={img.imageUrl}
-                alt={`Captured ${index + 1}`}
-                className="w-full h-64 object-cover rounded-md"
-                crossOrigin="anonymous"
-                style={{ filter: img.filter }} // Tambahkan filter gambar
-              />
 
-              {selectedSticker && (
-                <div className="absolute inset-0 pointer-events-none">
-                  {[...Array(20)].map((_, i) => (
-                    <span
-                      key={i}
-                      className="absolute"
-                      style={{
-                        fontSize: `${Math.random() * 12 + 8}px`,
-                        top: `${Math.random() * 100}%`,
-                        left: `${Math.random() * 100}%`,
-                        opacity: Math.random() * 0.5 + 0.3,
-                        transform: `rotate(${Math.random() * 360}deg)`,
-                      }}
-                    >
-                      {selectedSticker}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))
-        )}
-
-        {/* Watermark */}
-        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-gray-600 text-xs font-semibold opacity-80 whitespace-nowrap">
-          © {new Date().getFullYear()} Casofin Photo Booth
+      {/* Preview Foto */}
+      <div className="bg-white p-6 rounded-lg shadow-xl relative" style={{ backgroundColor: frameColor }}>
+        <div className={`flex ${layout === "grid" ? "flex-wrap gap-5" : "flex-col items-center gap-5"}`}>
+          {capturedImages.map((img, index) => (
+            <img key={index} src={img.imageUrl} alt={`Captured ${index + 1}`} className="w-[200px] h-[150px] rounded-lg border-gray-300 shadow-md" style={{ filter: img.filter }} />
+          ))}
         </div>
       </div>
-      {/* Download Button */}
-      <button
-        onClick={downloadPhotoStrip}
-        disabled={isRendering || capturedImages.length === 0}
-        className={`mt-6 px-5 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold rounded-lg shadow-md ${
-          isRendering || capturedImages.length === 0
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-pink-600 hover:bg-pink-700 text-white"
-        }`}
-      >
-        {isRendering ? (
-          <Loader2 className="animate-spin w-5 h-5" />
-        ) : (
-          "Download Photo Strip"
-        )}
+
+      {/* Tombol Download */}
+      <button onClick={downloadPhotoStrip} className="mt-6 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition" disabled={isDownloading}>
+        {isDownloading ? "Processing..." : "Download Photo Strip"}
       </button>
-      {errorMessage && (
-        <p className="mt-2 text-red-500 text-center font-medium">
-          {errorMessage}
-        </p>
-      )}
-      <p className="text-base sm:text-lg text-gray-800 mt-4 leading-relaxed px-2 sm:px-4 text-center">
-        "Jika download gagal, silakan coba lagi 🙏. Ini disebabkan oleh
-        pembatasan browser (CORS), dan kami sedang berusaha memperbaikinya 😊."
-      </p>
+
+      {/* Tombol Kembali */}
+      <button onClick={() => navigate("/Capture")} className="mt-4 px-6 py-3 bg-gray-800 text-white rounded-lg shadow-lg hover:bg-gray-700 transition">
+        Back to Capture
+      </button>
     </div>
   );
 }
