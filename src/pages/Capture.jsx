@@ -75,9 +75,6 @@ export default function Capture({ setCapturedImages = () => {} }) {
     const newCapturedImages = [];
 
     const captureSequence = async () => {
-      if (capturing) return;
-      setCapturing(true);
-
       let photosTaken = 0;
       const newCapturedImages = [];
 
@@ -86,15 +83,11 @@ export default function Capture({ setCapturedImages = () => {} }) {
           setCountdown(null);
           setCapturing(false);
           setCapturedImages([...newCapturedImages]); // Simpan ke global state
-          setImages([...newCapturedImages]); // Simpan untuk preview sementara
-
+          setImages([...newCapturedImages]); // Simpan lokal
           console.log("Captured Images:", newCapturedImages);
-
-          setTimeout(() => {
-            navigate("/preview", {
-              state: { capturedImages: newCapturedImages }, // 🔹 Kirim dengan filter
-            });
-          }, 500);
+          navigate("/preview", {
+            state: { capturedImages: newCapturedImages },
+          });
           return;
         }
 
@@ -111,7 +104,7 @@ export default function Capture({ setCapturedImages = () => {} }) {
               triggerFlash();
               const captured = capturePhoto();
               if (captured) {
-                newCapturedImages.push({ imageUrl: captured, filter }); // 🔹 Simpan filter
+                newCapturedImages.push({ imageUrl: captured, filter }); // ✅ Filter ikut disimpan
                 setImages((prevImages) => [
                   ...prevImages,
                   { imageUrl: captured, filter },
