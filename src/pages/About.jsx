@@ -1,4 +1,4 @@
-import React from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Video,
@@ -66,13 +66,13 @@ export default function About() {
           animate={{ scale: 1 }}
           transition={{ delay: 1.2, type: "spring", stiffness: 100 }}
         >
-          <a
-            href="/"
+          <Link
+            to="/capture"
             className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:scale-105 transition-transform duration-300 flex items-center gap-2 justify-center"
           >
             <Camera className="w-5 h-5" />
             Coba Sekarang
-          </a>
+          </Link>
         </motion.div>
       </div>
     </div>
