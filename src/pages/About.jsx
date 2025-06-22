@@ -67,7 +67,7 @@ export default function About() {
           transition={{ delay: 1.2, type: "spring", stiffness: 100 }}
         >
           <a
-            href="/capture"
+            href="/"
             className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:scale-105 transition-transform duration-300 flex items-center gap-2 justify-center"
           >
             <Camera className="w-5 h-5" />
