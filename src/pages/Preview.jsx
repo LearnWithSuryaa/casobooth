@@ -21,7 +21,7 @@ export default function PreviewPage() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const imgWidth = 300;
-  const imgHeight = 225;
+  const imgHeight = 185;
   const spacing = 25;
   const borderSize = 30;
   const wmHeight = 70;
